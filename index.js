@@ -48,7 +48,7 @@ const puppeteer = require('puppeteer');
   // TAKE A SCREENSHOT
   // await page.screenshot({ path: 'example.png' })
 
-  // OTHER COMMON PUPPETEER FUNCTIONS
+  // PAGINATION
   // await page.click('.next')
   // await page.waitFor(5000)
 
