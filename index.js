@@ -1,51 +1,58 @@
-const puppeteer = require('puppeteer')
-const fs = require('fs-extra')
-const { username, password } = require('./creds')
-
-// COLLECT URLS
-const loginURL = 'https://www.linkedin.com/uas/login'
-const pageToScrape = 'https://www.linkedin.com/groups/47530/members'
-
-// CONFIGURE REGEX PATTERNS
-const urlRegex = /https:\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?/
-const customRegex = /id="hovercard-\d+">(.+)<\/span><\/p><p class="entity-headline">(.+)<\/p><p/;
+const puppeteer = require('puppeteer');
 
 (async () => {
-  // START PUPPETEER
   const browser = await puppeteer.launch({ headless: false })
   const page = await browser.newPage()
 
-  // LOGIN
-  await page.goto(loginURL)
-  await page.waitForSelector('#mini-profile--js')
-  await page.type('#session_key-login', username)
-  await page.type('#session_password-login', password)
-  await page.click('#btn-primary')
+  // CONFIGURE LOGIN IF NECESSARY
+  // const { username, password } = require('./creds')
+  // const loginURL = 'https://www.linkedin.com/uas/login'
+  // await page.goto(loginURL, { 'waitUntil': 'networkidle0' })
+  // await page.type('#session_key-login', username)
+  // await page.type('#session_password-login', password)
+  // await page.click('#btn-primary')
 
-  // REDIRECT TO NEW PAGE
-  await page.goto(pageToScrape)
-  await page.waitForSelector('.member-view')
+  // START SCRAPING
+  const pageToScrape = 'https://www.indeed.com/jobs?q=javascript+remote&l=United+States'
+  const cssSelector = '#resultsCol .row[data-tn-component="organicJob"]'
+  await page.goto(pageToScrape, { 'waitUntil': 'networkidle0' })
 
-  let members = await page.$$eval('.member-entity', el => {
-    return el.map((e) => e.innerHTML)
+  // FORMAT RESULTS
+  let results = await page.$$eval(cssSelector, el => {
+    return el.map((e) => {
+      return {
+        position: e.children[0].innerText,
+        company: e.children[1].innerText,
+        location: e.children[2].innerText
+      }
+    })
   })
 
-  for (let member of members) {
-    member = member.replace(/\n/g, ' ')
-    let profileURL = member.match(urlRegex)
-    let group = member.match(customRegex)
-    let name = group[1].replace(/,/g, ' - ')
-    let headline = group[2].replace(/,/g, ' - ')
-    await fs.appendFile('out.csv', `${profileURL},${name},${headline}\n`)
-  }
+  // PERFORM REGEX IF NECESSARY
+  // const urlRegex = /https:\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?/
+  // const customRegex = /id="hovercard-\d+">(.+)<\/span><\/p><p class="entity-headline">(.+)<\/p><p/;
+  // for (let result of results) {
+  //   result = result.replace(/\n/g, ' ')
+  //   let profileURL = result.match(urlRegex)
+  //   let group = result.match(customRegex)
+  //   let name = group[1].replace(/,/g, ' - ')
+  //   let headline = group[2].replace(/,/g, ' - ')
+  // }
 
-  await page.click('.next')
+  // WRITE TO CSV
+  // const fs = require('fs-extra')
+  // for (let result of results) {
+  //   await fs.appendFile('results.csv', `${profileURL},${name},${headline}\n`)
+  // }
 
-  await page.waitFor(5000)
+  // TAKE A SCREENSHOT
+  // await page.screenshot({ path: 'example.png' })
+
+  // OTHER COMMON PUPPETEER FUNCTIONS
+  // await page.click('.next')
+  // await page.waitFor(5000)
+
+  console.log(results)
 
   await browser.close()
 })()
-
-// ADDITIONAL FUNCTIONALITY
-// TAKE A SCREENSHOT
-// await page.screenshot({ path: 'example.png' })
