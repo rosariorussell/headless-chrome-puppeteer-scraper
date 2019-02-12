@@ -64,6 +64,10 @@ const scrape = async (pageToScrape) => {
   //   let name = group[1].replace(/,/g, ' - ')
   //   let headline = group[2].replace(/,/g, ' - ')
   // }
+  
+  // MATCH EVERY CHARACTER BETWEEN THIS IS AND SENTENCE
+  // rgx = /(?<=This is)(.*)(?=sentence)/
+  // str.match(rgx)[0]
 
   // WRITE TO CSV
   // const fs = require('fs-extra')
@@ -73,6 +77,9 @@ const scrape = async (pageToScrape) => {
 
   // TAKE A SCREENSHOT
   // await page.screenshot({ path: 'example.png' })
+  
+  // SYNCHRONOUS TIMEOUT
+  // await new Promise(done => setTimeout(() => done(), 2000));
 
   await browser.close()
   return results
