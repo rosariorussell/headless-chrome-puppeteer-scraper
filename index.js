@@ -1,24 +1,47 @@
 const puppeteer = require('puppeteer')
 
-const listOfPages = [
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=10',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=20',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=30',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=40',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=50',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=60',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=70',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=80',
-  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=90'
-]
-
 const cssSelector = '#resultsCol .row[data-tn-component="organicJob"]'
 
 const scrape = async (pageToScrape) => {
+  // SET UP PUPPETEER
   const browser = await puppeteer.launch({ devtools: false, headless: false, args: ['--start-fullscreen'] })
   const page = await browser.newPage()
   await page.setViewport({ width: 2080, height: 1200 })
+
+  // START SCRAPING
+  await page.goto(pageToScrape, { 'waitUntil': 'networkidle0' })
+
+  // FORMAT RESULTS
+  let results = await page.$$eval(cssSelector, el => {
+    return el.map((e) => {
+      return {
+        position: e.children[0].innerText,
+        company: e.children[1].innerText,
+        location: e.children[2].innerText
+      }
+    })
+  })
+
+  await browser.close()
+  return results
+}
+
+const listOfPages = [
+  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States',
+  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=10',
+  'https://www.indeed.com/jobs?q=javascript+remote&l=United+States&start=20'
+]
+
+const multiPageScrap = async (arrayOfPages) => {
+  let results = []
+  let start = new Date()
+  for (let page of arrayOfPages) {
+    const result = await scrape(page)
+    results.push(...result)
+  }
+  let end = new Date()
+  console.log(results.length, 'results collected in', (end - start) / 1000, 'seconds')
+}
 
   // CONFIGURE LOGIN IF NECESSARY
   // const { username, password } = require('./creds')
@@ -27,22 +50,6 @@ const scrape = async (pageToScrape) => {
   // await page.type('#session_key-login', username)
   // await page.type('#session_password-login', password)
   // await page.click('#btn-primary')
-
-  // START SCRAPING
-
-  await page.goto(pageToScrape, { 'waitUntil': 'networkidle0' })
-
-  // FORMAT RESULTS
-  let results = await page.$$eval(cssSelector, el => {
-    return el.map((e) => {
-      return {
-        // url: e.children[0].innerHTML,
-        position: e.children[0].innerText,
-        company: e.children[1].innerText,
-        location: e.children[2].innerText
-      }
-    })
-  })
 
   // EXTRACT LINKS FROM ELEMENTS
   // const urls = await page.evaluate(() => {
@@ -64,7 +71,7 @@ const scrape = async (pageToScrape) => {
   //   let name = group[1].replace(/,/g, ' - ')
   //   let headline = group[2].replace(/,/g, ' - ')
   // }
-  
+
   // MATCH EVERY CHARACTER BETWEEN THIS IS AND SENTENCE
   // rgx = /(?<=This is)(.*)(?=sentence)/
   // str.match(rgx)[0]
@@ -77,21 +84,23 @@ const scrape = async (pageToScrape) => {
 
   // TAKE A SCREENSHOT
   // await page.screenshot({ path: 'example.png' })
-  
+
   // SYNCHRONOUS TIMEOUT
   // await new Promise(done => setTimeout(() => done(), 2000));
 
-  await browser.close()
-  return results
-}
+  // SCROLL TO BOTTOM OF PAGE
+  // const scroll = function (){
+  //    window.scrollTo(0,document.body.scrollHeight);
+  //  }
+  // setInterval(scroll, 2000)
 
-(async function runMultiPageScrape () {
-  let fullResults = []
-  let start = new Date()
-  for (let page of listOfPages) {
-    const result = await scrape(page)
-    fullResults.push(...result)
-  }
-  let end = new Date()
-  console.log(fullResults.length, 'results collected in', (end - start) / 1000, 'seconds')
-})()
+  // // NESTED LINKS LOGIC
+  // While Loop
+    // collect items
+    // for each item
+    //   click link
+    //   collect data and push to results
+    //   go back
+    // if more pages
+    //   click next
+    // else break
